@@ -5,11 +5,11 @@
 
 (macro cc-function (name params *body)
      (let ((__f ((+ "cc-" name) symbolValue)))
+          (set __paramlist nil)
           (set __m (list __f 'g-cc-cont))
-          (if (> (params length) 0)
-              (then (set __m (append __m (list (list 'quasiquote-eval params))))))
+		  (set __m (append __m (params map: (do (p) (list 'quasiquote-eval p)))))
           (set __m (list 'quasiquote __m))
-          (puts __m)
+          ;(puts "m: " __m "")
           `(progn
                  (macro ,name ,params
                       ,__m)
