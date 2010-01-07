@@ -13,7 +13,6 @@
               g-choose-failsym)))
 
 (macro choose (*choices)
-     (puts *choices)
      (if (not (null? *choices))
          (then
               `(progn
