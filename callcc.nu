@@ -3,11 +3,11 @@
 
 (set g-cc-cont (do (x) x))
 
-(macro cc-do (params *body)
+(macro =do (params *body)
      `(do (g-cc-cont ,@params) ,@body))
 
-(macro cc-function (name params *body)
-     (let ((__f ((+ "cc-" name) symbolValue)))
+(macro =function (name params *body)
+     (let ((__f ((+ "=" name) symbolValue)))
           (set __paramlist nil)
           (set __m (list __f 'g-cc-cont))
           (set __m (append __m (params map: (do (p) (list 'quasiquote-eval p)))))
@@ -17,11 +17,11 @@
                       ,__m)
                  (function ,__f (g-cc-cont ,@params) ,@*body))))
 
-(macro cc-bind (params expr *body)
+(macro =bind (params expr *body)
      `(let ((g-cc-cont (do ,params ,@*body))) ,expr))
 
-(macro cc-values (*vals)
+(macro =values (*vals)
      `(g-cc-cont ,@*vals))
 
-(macro cc-apply (fn *params)
+(macro =apply (fn *params)
      `(apply ,fn g-cc-cont ,@*params))

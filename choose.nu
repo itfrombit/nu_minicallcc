@@ -27,18 +27,13 @@
      `(cb (do (,var) ,@*body) ,choices))
 
 (function cb (fn choices)
-	;(puts "cb:       fn: #{fn}")
-	;(puts "cb: choices: #{choices}")
-	
      (if (not (null? choices))
          (then
-			;(puts "cb: then")
               (if (cdr choices)
                   (push (do () (cb fn (cdr choices)))
                         g-choose-paths))
               ((fn (car choices))))
          (else
-			;(puts "cb: else")
               (fail))))
 
 (function choose-clear-paths ()

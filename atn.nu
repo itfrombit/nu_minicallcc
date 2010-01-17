@@ -6,10 +6,10 @@
 (set g-atn-cur nil)
 
 (macro defnode (name *arcs)
-     `(cc-function ,name (pos regs) (choose ,@*arcs)))
+     `(=function ,name (pos regs) (choose ,@*arcs)))
 
 (macro down (sub next *cmds)
-     `(cc-bind (g-atn-cur pos regs) (,sub pos (cons nil regs))
+     `(=bind (g-atn-cur pos regs) (,sub pos (cons nil regs))
                (,next pos ,(compile-cmds *cmds))))
 
 (macro cat (cat next *cmds)
@@ -35,7 +35,7 @@
 
 (macro up (expr)
      `(let ((g-atn-cur (nth pos $sent)))
-           (cc-values ,expr pos (cdr regs))))
+           (=values ,expr pos (cdr regs))))
 
 (macro getr (key *regs)
      (if (null? *regs) ;; regs is optional
@@ -62,7 +62,7 @@
      `(progn
             (set $sent ,sent)
             (set $paths nil)
-            (cc-bind (parse __pos __regs) (,node 0 '(nil))
+            (=bind (parse __pos __regs) (,node 0 '(nil))
                      (if (== __pos ($sent length))
                          (then (progn ,@*body (fail)))
                          (else (fail))))))

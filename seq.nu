@@ -9,15 +9,14 @@
            (6 '(7))
            (else nil)))
 
-
-(cc-function descent (n1 n2)
+(=function descent (n1 n2)
      (cond
           ((== n1 n2)
-           (cc-values (list n2)))
+           (=values (list n2)))
           ((kids n1)
            (choose-bind n (kids n1)
-                (cc-bind (p) (descent n n2)
-                         (cc-values (cons n1 p)))))
+                (=bind (p) (descent n n2)
+                       (=values (cons n1 p)))))
           (else (fail))))
 
 

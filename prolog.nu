@@ -9,65 +9,6 @@
          (then `(puts ,@*args))
          (else nil)))
 
-(macro multiple-value-bind (vars vals *body)
-     (set i 0)
-     (set __evalvals (eval vals))
-     ;(puts "mvb: #{__evalvals}")
-     (set letvars nil)
-     (while (< i (vars length))
-            (set letvars (append letvars (list (list (nth i vars)
-                                                     `',(nth i __evalvals)))))
-            (set i (+ i 1)))
-     ;(puts "mvb letvars: #{letvars}")
-     `(let ,letvars
-           ,@*body))
-
-;(multiple-value-bind (a b) (binding '?x b) (list a b))
-
-(macro aif (test-clause then-clause else-clause)
-     `(let ((it ,test-clause))
-           (if it
-               (then ,then-clause)
-               (else ,else-clause))))
-
-(macro aif2 (test-clause then-clause else-clause)
-     `(multiple-value-bind (it __win) ,test-clause
-           (if (or it __win)
-               (then ,then-clause)
-               (else ,else-clause))))
-
-
-(macro acond2 (*clauses)
-     (dbg "acond2: clauses: #{*clauses}")
-     (if (null? *clauses)
-         (then nil)
-         (else
-              (let ((cl1 (car *clauses)))
-                   (dbg "acond2-let: cl1: #{cl1}")
-                   `(multiple-value-bind (__val __win) ,(car cl1)
-                         (if (or (not (null? __val)) (not (null? __win)))
-                             (then
-                                  (let ((it __val))
-                                       ,@(cdr cl1)))
-                             (else
-                                  (acond2 ,@(cdr *clauses)))))))))
-
-(macro apply-key (key item)
-     `(if ,key
-          (then (,key ,item))
-          (else ,item)))
-
-(function sublis (alist tree)
-     (cond
-          ((null? tree) nil)
-          ((atom tree)
-           (if (assoc tree alist)
-               (then (cadr (assoc tree alist)))
-               (else tree)))
-          (else
-               (cons (sublis alist (car tree)) (sublis alist (cdr tree))))))
-
-
 (function vars-in (expr)
      (if (atom expr)
          (then
@@ -77,28 +18,6 @@
               (union (vars-in (car expr))
                      (vars-in (cdr expr))))))
 
-
-(function union (l1 l2)
-     (set r nil)
-     ((list l1 l2) map:
-      (do (l)
-          (set i 0)
-          (while (< i (l length))
-                 (if (not (member (nth i l) r))
-                     (then (push (nth i l) r)))
-                 (incf i))
-          ))
-     r)
-
-
-;;;
-
-(function gensym (*x)
-     (set s (+ "G" ((floor (rand 999999999)))))
-     (if (and (not (null? *x) (not (null? (car *x)))))
-         (then (set s (+ ((car *x) stringValue) s))))
-     (s symbolValue))
-
 (function rep_ (x)
      (if (atom x)
          (then
@@ -107,7 +26,6 @@
                   (else x)))
          (else
               (cons (rep_ (car x)) (rep_ (cdr x))))))
-
 
 (function binding-rec (x binds)
      (aif (assoc x binds)
@@ -163,7 +81,7 @@
          (== "?" (subseq (x stringValue) 0 1))))
 
 
-(cc-function prove-query (expr binds)
+(=function prove-query (expr binds)
      (dbg "prove-query: expr: #{expr}")
      (dbg "prove-query: binds: #{binds}")
      (case (car expr)
@@ -173,30 +91,30 @@
            (else (dbg "prove-query: else") (prove-simple expr binds))))
 
 
-(cc-function prove-and (clauses binds)
+(=function prove-and (clauses binds)
      (if (null? clauses)
          (then
-              (cc-values binds))
+              (=values binds))
          (else
-              (cc-bind (binds)
-                       (prove-query (car clauses) binds)
-                       (prove-and (cdr clauses) binds)))))
+              (=bind (binds)
+                     (prove-query (car clauses) binds)
+                     (prove-and (cdr clauses) binds)))))
 
-(cc-function prove-or (clauses binds)
+(=function prove-or (clauses binds)
      (choose-bind c clauses
           (prove-query c binds)))
 
-(cc-function prove-not (expr binds)
+(=function prove-not (expr binds)
      (let ((save-paths $paths))
           (set $paths nil)
-          (choose (cc-bind (b) (prove-query expr binds)
-                           (set $paths save-paths)
-                           (fail))
+          (choose (=bind (b) (prove-query expr binds)
+                         (set $paths save-paths)
+                         (fail))
                   (progn
                         (set $paths save-paths)
-                        (cc-values binds)))))
+                        (=values binds)))))
 
-(cc-function prove-simple (query binds)
+(=function prove-simple (query binds)
      (dbg "prove-simple: query: #{query}")
      (dbg "prove-simple: binds: #{binds}")
      (dbg "prove-simple: rlist: #{$rlist}")
@@ -215,7 +133,7 @@
           (dbg "<-: ant: #{ant}")
           `((set $rlist (append $rlist (rep_ (list (cons ',ant ',con))))) length)))
 
-(cc-function implies (r query binds)
+(=function implies (r query binds)
      (dbg "implies: -----------------------")
      (dbg "implies:     r: #{r}")
      (dbg "implies: query: #{query}")
@@ -242,14 +160,14 @@
      
      `(progn
             (set $paths nil)
-            (cc-bind (binds) (prove-query ',(rep_ query) nil)
-                     (let ,(mapcar-1 (do (v)
-                                         `(,v (fullbind ',v binds)))
-                                (vars-in query))
-                          ,@*body
-                          (fail)
-                          )
-                     )))
+            (=bind (binds) (prove-query ',(rep_ query) nil)
+                   (let ,(mapcar-1 (do (v)
+                                       `(,v (fullbind ',v binds)))
+                              (vars-in query))
+                        ,@*body
+                        (fail)
+                        )
+                   )))
 
 (function match (x y binds)
      (dbg "-------------------")
@@ -287,20 +205,12 @@
                (list nil nil))))
 
 
-(<- (painter ?x) (and (hungry ?x) (smells-of ?x turpentine)))
-(<- (hungry ?x) (or (gaunt ?x) (eats-ravenously ?x)))
-(<- (gaunt raoul))
-(<- (smells-of raoul turpentine))
-(<- (painter rubens))
 
-(puts "$rlist: #{$rlist}")
+(<- (identical ?x ?x))
 
+(with-inference (identical a ?x)
+     (puts "with-inference identical test: #{?x}"))
 
-(with-inference (painter ?x)
-     (puts "with-inference painter test:  #{?x}"))
-
-(with-inference (gaunt ?x)
-     (puts "with-inference gaunt test:  #{?x}"))
 
 
 ;(puts "Test sublis: #{(sublis '((x 1) (y 2)) '(+ (* x x) (* y y)))}")
